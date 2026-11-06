@@ -3,12 +3,42 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="refresh" content="0; url=./Index.html">
-  <link rel="canonical" href="./Index.html">
+  <meta name="theme-color" content="#241332">
   <title>Arcardia – Spieler &amp; Berufe</title>
-  <script>window.location.replace(new URL('./Index.html', window.location.href).href);</script>
 </head>
 <body>
-  <p>Weiter zu <a href="./Index.html">Arcardia – Spieler &amp; Berufe</a> …</p>
+  <p id="status">Arcardia wird geladen …</p>
+  <script>
+    (async () => {
+      const status = document.getElementById('status');
+      try {
+        const response = await fetch('./Index.html', { cache: 'no-store' });
+        if (!response.ok) throw new Error(`Laden fehlgeschlagen (${response.status})`);
+        let html = await response.text();
+
+        // Restore the previous shield-and-lantern crest shown in the reference.
+        const previousCrest = `<svg class="crest" viewBox="0 0 120 120" role="img" aria-label="Arcardia Wappen">
+          <defs><linearGradient id="shield" x2="0" y2="1"><stop stop-color="var(--crest1)"/><stop offset=".5" stop-color="var(--crest2)"/><stop offset="1" stop-color="var(--crest3)"/></linearGradient></defs>
+          <path d="M60 8 98 18v38c0 26-16 44-38 54C38 100 22 82 22 56V18z" style="fill:url(#shield);stroke:var(--ink);stroke-width:3"/>
+          <path d="m39 45 21-19 21 19-13-5-8 5-8-5zm7 10 14-11 14 11-3 21-11 9-11-9z" style="fill:var(--crestAccent);stroke:var(--ink);stroke-width:1.5;stroke-linejoin:round"/>
+          <path d="M60 42v42" style="fill:none;stroke:var(--ink);stroke-width:3;stroke-linecap:round"/><path d="M53 68h14v14l-7 6-7-6z" style="fill:var(--crest1);stroke:var(--ink);stroke-width:1.5"/><circle cx="60" cy="41" r="5" fill="var(--ink)"/>
+        </svg>`;
+        html = html.replace(/<svg class="crest"[\s\S]*?<\/svg>/, previousCrest);
+
+        // Summer is no longer treated as a seasonal falling-particle theme.
+        html = html.replace("seasons=['winter','autumn','spring','summer']", "seasons=['winter','autumn','spring']");
+
+        // Keep Dragonfire's palette warm: replace the teal crest and particle accents.
+        html = html.replace('--crestAccent:#318b83;--spark:#ffd26e;--spark2:#55e0d1', '--crestAccent:#ffb347;--spark:#ffd26e;--spark2:#ffb347');
+
+        document.open();
+        document.write(html);
+        document.close();
+      } catch (error) {
+        status.textContent = 'Die Seite konnte nicht geladen werden. Bitte versuche es später erneut.';
+        console.error(error);
+      }
+    })();
+  </script>
 </body>
 </html>
