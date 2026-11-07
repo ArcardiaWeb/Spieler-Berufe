@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#241332">
+  <meta name="theme-color" content="#101a46">
   <title>Arcardia – Spieler &amp; Berufe</title>
 </head>
 <body>
@@ -12,27 +12,59 @@
     (async () => {
       const status = document.getElementById('status');
       try {
-        const response = await fetch('./Index.html?restore-first-design=1', { cache: 'no-store' });
+        const response = await fetch('./Index.html', { cache: 'no-store' });
         if (!response.ok) throw new Error(`Laden fehlgeschlagen (${response.status})`);
         let html = await response.text();
 
-        // Restore the original first-pass shield, upward rune and lantern emblem.
-        const originalCrest = `<svg class="crest" viewBox="0 0 120 120" role="img" aria-label="Arcardia Wappen">
-          <defs><linearGradient id="shield" x2="0" y2="1"><stop stop-color="var(--crest1)"/><stop offset=".5" stop-color="var(--crest2)"/><stop offset="1" stop-color="var(--crest3)"/></linearGradient></defs>
-          <path d="M60 8 98 18v38c0 26-16 44-38 54C38 100 22 82 22 56V18z" fill="url(#shield)" stroke="var(--ink)" stroke-width="3"/>
-          <path d="m39 45 21-19 21 19-13-5-8 5-8-5zm7 10 14-11 14 11-3 21-11 9-11-9z" fill="var(--crestAccent)" stroke="var(--ink)" stroke-width="1.5" stroke-linejoin="round"/>
-          <circle cx="60" cy="41" r="5" fill="var(--ink)"/>
-        </svg>`;
-        html = html.replace(/<svg\b[^>]*class=["'][^"']*\bcrest\b[^"']*["'][\s\S]*?<\/svg>/i, originalCrest);
-
-        // Keep summer out of the falling seasonal set; it will use the floating sparkles.
-        html = html.replace(/((?:const\s+)?(?:seasons|seasonal)\s*=\s*)\[([^\]]*)\]/g, (whole, prefix, values) => {
-          const kept = values.split(',').map(value => value.trim()).filter(value => value.replace(/[\"']/g, '') !== 'summer');
-          return prefix + '[' + kept.join(',') + ']';
-        });
-
-        // Dragonfire stays in warm amber/orange colors rather than turquoise.
-        html = html.replace('</style>', 'body[data-theme="dragon"]{--crestAccent:#ffb347;--spark2:#ffb347}\n</style>');
+        // Bring every theme into the illustrated, atmospheric Arcadia look.
+        const redesign = `
+          <style id="arcadia-redesign">
+            :root { --scene-a:#101a46; --scene-b:#080d26; --glow:#7563ff; }
+            body { background:radial-gradient(ellipse at 50% 12%, color-mix(in srgb, var(--glow) 28%, transparent), transparent 42%), linear-gradient(160deg,var(--scene-a),var(--scene-b) 76%); background-attachment:fixed; }
+            body::before { background:radial-gradient(circle at 12% 18%,rgba(255,255,255,.07) 0 1px,transparent 2px),radial-gradient(circle at 82% 32%,rgba(255,255,255,.08) 0 1px,transparent 2px),radial-gradient(circle at 42% 76%,rgba(255,255,255,.06) 0 1px,transparent 2px); background-size:190px 190px,240px 240px,280px 280px; opacity:.8; }
+            header { padding:64px 20px 30px; border-bottom:2px solid color-mix(in srgb,var(--glow) 75%,white); background:radial-gradient(ellipse at 50% 20%,color-mix(in srgb,var(--glow) 18%,transparent),transparent 65%); box-shadow:none; }
+            .design-picker { top:16px; right:16px; padding:8px 10px; border:1px solid rgba(255,255,255,.65); border-radius:14px; background:rgba(248,249,255,.94); box-shadow:0 6px 24px rgba(0,0,0,.2); backdrop-filter:blur(8px); }
+            .design-picker label { color:#20243b; }
+            .design-picker select { color:#20243b; border-color:rgba(32,36,59,.18); background:#fff; }
+            .crest { width:112px; height:120px; margin:4px auto 14px; }
+            h1 { text-transform:none; letter-spacing:.02em; color:#f8f6ff; text-shadow:0 4px 24px color-mix(in srgb,var(--glow) 60%,transparent); }
+            header p { color:#e7e8ff; }
+            main { margin-top:22px; }
+            .tabs { border-color:color-mix(in srgb,var(--glow) 72%,white); }
+            .tabs button { border-color:rgba(255,255,255,.58); border-radius:13px 13px 0 0; background:rgba(255,255,255,.12); color:#f8f7ff; box-shadow:0 6px 22px rgba(0,0,0,.15); }
+            .tabs button[aria-selected="true"] { background:#f7f7ff; color:#20243b; }
+            h2 { color:#f8f6ff; text-shadow:0 2px 14px rgba(0,0,0,.22); }
+            input,select { border:1px solid rgba(31,35,58,.12); border-radius:13px; background:rgba(250,250,255,.97); color:#25263c; box-shadow:0 8px 24px rgba(0,0,0,.16); }
+            .card,.region { border:1px solid rgba(255,255,255,.78); border-radius:16px; background:rgba(250,250,255,.97); color:#25263c; box-shadow:0 10px 28px rgba(0,0,0,.2); }
+            .player-card { color:#25263c; padding:14px; }
+            .player-card h3,.job-card h3 { color:#25263c; }
+            .skin-head { border-color:color-mix(in srgb,var(--glow) 52%,white); }
+            .player-job,.job-count { color:color-mix(in srgb,var(--forest) 78%,#273858); }
+            .player-title { color:color-mix(in srgb,var(--glow) 72%,#283352); }
+            .bar { background:rgba(33,38,65,.1); border-color:rgba(33,38,65,.1); }
+            .members { border-color:rgba(33,38,65,.16); }
+            .expand { border-color:color-mix(in srgb,var(--glow) 48%,white); }
+            .empty { color:#f5f3ff; }
+            footer { color:#e9e7ff; }
+            dialog { border-radius:18px; }
+            body[data-theme="winter"] { --scene-a:#101b52; --scene-b:#070d28; --glow:#779cff; }
+            body[data-theme="autumn"] { --scene-a:#54243e; --scene-b:#21102d; --glow:#f0a267; }
+            body[data-theme="spring"] { --scene-a:#17483d; --scene-b:#0a2528; --glow:#8acb87; }
+            body[data-theme="midnight"] { --scene-a:#21144d; --scene-b:#090d2c; --glow:#9c85ff; }
+            body[data-theme="desert"] { --scene-a:#54213f; --scene-b:#24102f; --glow:#ffbd70; }
+            body[data-theme="dragon"] { --scene-a:#55221e; --scene-b:#21101c; --glow:#ff8a4c; }
+            body[data-theme="forest"] { --scene-a:#174333; --scene-b:#091f25; --glow:#86ba75; }
+            body[data-theme="moor"] { --scene-a:#254b49; --scene-b:#101f30; --glow:#a5c9c1; }
+            /* Summer is deliberately a fresh, bright sunset design; its crest remains unchanged. */
+            body[data-theme="summer"] { --scene-a:#125c63; --scene-b:#153348; --glow:#ffd36b; }
+            body[data-theme="summer"] .tabs { border-color:#ffd36b; }
+            body[data-theme="summer"] .tabs button[aria-selected="true"] { background:#fff5d8; }
+            @media (max-width:520px) { header { padding:72px 14px 26px; } .design-picker { top:8px; right:8px; } }
+            @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }
+          </style>`;
+        html = html.replace('</head>', redesign + '\n</head>');
+        html = html.replace('<h1>Spieler+Berufe</h1>', '<h1>Arcadia</h1>');
+        html = html.replace('<p>von ArcardiaWeb • Mittelalterliches Rollenspiel</p>', '<p>Die Bewohner, ihre Berufe und freie Plätze</p>');
 
         document.open();
         document.write(html);
